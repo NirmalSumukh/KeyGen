@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Add this line -->
+    <title>Key Generator</title>
+</head>
+<body>
+    <h1>Game Key Generator</h1>
+
+    <form id="keyForm">
+        <label for="gameSelect">Select Game:</label>
+        <select id="gameSelect" name="game_id"></select>
+
+        <label for="keyCount">Number of Keys:</label>
+        <input type="number" id="keyCount" name="key_count" value="1" min="1">
+
+        <button type="submit">Generate Keys</button>
+    </form>
+
+    <h2>Generated Keys:</h2>
+    <pre id="output"></pre>
+
+    <script>
+        // Replace with your actual public IP address or domain
+        const BASE_URL = 'http://192.168.29.221:8000'; // e.g., http://192.168.1.10:8000
+
+        async function loadGames() {
+            try {
+                const response = await fetch(`${BASE_URL}/games`); // Update fetch URL
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                const gameSelect = document.getElementById('gameSelect');
+
+                data.games.forEach(game => {
+                    const option = document.createElement('option');
+                    option.value = game.id;
+                    option.textContent = game.name;
+                    gameSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading games:', error);
+                const output = document.getElementById('output');
+                output.textContent = 'Error loading games.';
+            }
+        }
+
+        document.getElementById('keyForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const game_id = document.getElementById('gameSelect').value;
+            const key_count = document.getElementById('keyCount').value;
+
+            try {
+                const response = await fetch(`${BASE_URL}/generate-keys`, { // Update fetch URL
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ game_id: parseInt(game_id), key_count: parseInt(key_count) }),
+                });
+
+                const output = document.getElementById('output');
+                if (!response.ok) {
+                    const error = await response.json();
+                    output.textContent = error.detail || 'An error occurred.';
+                    return;
+                }
+
+                const result = await response.json();
+                output.textContent = result.keys ? result.keys.join('\n') : 'No keys generated.';
+            } catch (error) {
+                console.error(error);
+                const output = document.getElementById('output');
+                output.textContent = 'An error occurred while generating keys.';
+            }
+        });
+
+        // Load games on page load
+        window.onload = loadGames;
+    </script>
+</body>
+</html>
